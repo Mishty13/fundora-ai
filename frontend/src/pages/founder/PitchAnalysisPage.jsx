@@ -331,6 +331,63 @@ function PitchAnalysisPage() {
     fileInputRef.current?.click()
   }
 
+  const renderSelectedFileUpload = () => {
+    if (!selectedFile) {
+      return null
+    }
+
+    return (
+      <div
+        className="
+          mt-5 rounded-xl border
+          border-violet-400/15
+          bg-violet-400/[0.05] p-4
+        "
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <FileUp className="h-5 w-5 shrink-0 text-violet-200" />
+
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-white">
+              {selectedFile.name}
+            </p>
+
+            <p className="mt-1 text-xs text-slate-500">
+              {formatFileSize(selectedFile.size)}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleUpload}
+          disabled={uploading}
+          className="
+            focus-ring mt-4 inline-flex items-center
+            gap-2 rounded-lg bg-violet-600
+            px-4 py-2.5 text-sm font-semibold
+            text-white transition-opacity
+            hover:opacity-95
+            disabled:cursor-not-allowed
+            disabled:opacity-60
+          "
+        >
+          {uploading ? (
+            <>
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+              Analyzing pitch deck...
+            </>
+          ) : (
+            <>
+              <FileUp className="h-4 w-4" />
+              Upload and analyze
+            </>
+          )}
+        </button>
+      </div>
+    )
+  }
+
   if (loading) {
     return <PageLoader label="Loading pitch intelligence" />
   }
@@ -517,65 +574,7 @@ function PitchAnalysisPage() {
                 </p>
               </button>
 
-              {selectedFile && (
-                <div
-                  className="
-                    mt-5 flex flex-col gap-4 rounded-2xl
-                    border border-white/[0.07]
-                    bg-white/[0.025] p-5
-                    sm:flex-row sm:items-center
-                    sm:justify-between
-                  "
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <FileUp className="h-5 w-5 shrink-0 text-violet-200" />
-
-                    <div className="min-w-0">
-                      <p
-                        className="
-                          truncate text-sm font-semibold text-white
-                        "
-                      >
-                        {selectedFile.name}
-                      </p>
-
-                      <p className="mt-1 text-xs text-slate-600">
-                        {formatFileSize(selectedFile.size)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleUpload}
-                    disabled={uploading}
-                    className="
-                      focus-ring inline-flex items-center
-                      justify-center gap-2 rounded-xl
-                      bg-gradient-to-r from-violet-600
-                      to-cyan-500 px-5 py-3
-                      text-sm font-semibold text-white
-                      transition-opacity hover:opacity-95
-                      disabled:cursor-not-allowed
-                      disabled:opacity-60
-                    "
-                  >
-                    {uploading ? (
-                      <>
-                        <LoaderCircle
-                          className="h-4 w-4 animate-spin"
-                        />
-                        Uploading
-                      </>
-                    ) : (
-                      <>
-                        Upload pitch deck
-                        <FileUp className="h-4 w-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
+              {renderSelectedFileUpload()}
             </section>
           )}
 
@@ -663,42 +662,7 @@ function PitchAnalysisPage() {
                     className="hidden"
                   />
 
-                  {selectedFile && (
-                    <div
-                      className="
-                        mt-5 rounded-xl border
-                        border-violet-400/15
-                        bg-violet-400/[0.05] p-4
-                      "
-                    >
-                      <p className="truncate text-sm font-medium text-white">
-                        {selectedFile.name}
-                      </p>
-
-                      <button
-                        type="button"
-                        onClick={handleUpload}
-                        disabled={uploading}
-                        className="
-                          focus-ring mt-3 inline-flex items-center
-                          gap-2 rounded-lg bg-violet-600
-                          px-4 py-2.5 text-sm font-semibold
-                          text-white disabled:opacity-60
-                        "
-                      >
-                        {uploading ? (
-                          <>
-                            <LoaderCircle
-                              className="h-4 w-4 animate-spin"
-                            />
-                            Uploading
-                          </>
-                        ) : (
-                          'Upload selected deck'
-                        )}
-                      </button>
-                    </div>
-                  )}
+                  {renderSelectedFileUpload()}
                 </div>
               </div>
             </section>
@@ -749,56 +713,7 @@ function PitchAnalysisPage() {
                     className="hidden"
                   />
 
-                  {selectedFile && (
-                    <div
-                      className="
-                        mt-5 rounded-xl border
-                        border-violet-400/15
-                        bg-violet-400/[0.05] p-4
-                      "
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <FileUp className="h-5 w-5 shrink-0 text-violet-200" />
-
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-white">
-                            {selectedFile.name}
-                          </p>
-
-                          <p className="mt-1 text-xs text-slate-500">
-                            {formatFileSize(selectedFile.size)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={handleUpload}
-                        disabled={uploading}
-                        className="
-                          focus-ring mt-4 inline-flex items-center
-                          gap-2 rounded-lg bg-violet-600
-                          px-4 py-2.5 text-sm font-semibold
-                          text-white transition-opacity
-                          hover:opacity-95
-                          disabled:cursor-not-allowed
-                          disabled:opacity-60
-                        "
-                      >
-                        {uploading ? (
-                          <>
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                            Analyzing pitch deck...
-                          </>
-                        ) : (
-                          <>
-                            <FileUp className="h-4 w-4" />
-                            Upload and analyze
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
+                  {renderSelectedFileUpload()}
                 </div>
               </div>
             </section>
@@ -897,6 +812,59 @@ function PitchAnalysisPage() {
                   emptyMessage="No recommendations were returned."
                 />
               </div>
+
+              <section
+                className="
+                  mx-auto mt-7 max-w-3xl rounded-2xl
+                  border border-violet-400/15
+                  bg-violet-400/[0.04] p-6
+                "
+              >
+                <div
+                  className="
+                    flex flex-col gap-5
+                    sm:flex-row sm:items-center
+                    sm:justify-between
+                  "
+                >
+                  <div>
+                    <p className="font-semibold text-white">
+                      Want to analyze another pitch?
+                    </p>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      Upload another PDF or PPTX deck to generate
+                      a fresh seven-dimension investor analysis.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={chooseAnotherDeck}
+                    className="
+                      focus-ring inline-flex shrink-0 items-center
+                      justify-center gap-2 rounded-xl
+                      bg-gradient-to-r from-violet-600
+                      to-cyan-500 px-5 py-3
+                      text-sm font-semibold text-white
+                      transition-opacity hover:opacity-95
+                    "
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Analyze another deck
+                  </button>
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.pptx"
+                  onChange={handleFileSelection}
+                  className="hidden"
+                />
+
+                {renderSelectedFileUpload()}
+              </section>
             </>
           )}
 
