@@ -5,9 +5,17 @@ from uuid import uuid4
 from fastapi import HTTPException, UploadFile, status
 
 from app.core.supabase import supabase_admin
+from app.services.pitch_analysis_provider import (
+    PitchAnalysisProviderError,
+    pitch_analysis_provider,
+)
 from app.services.pitch_extractor import (
     PitchExtractionError,
     extract_pitch_text,
+)
+from app.services.pitch_methodology import (
+    PITCH_METHODOLOGY_VERSION,
+    calculate_overall_pitch_score,
 )
 
 
@@ -17,7 +25,10 @@ MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024
 
 ALLOWED_CONTENT_TYPES = {
     "application/pdf": ".pdf",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+    (
+        "application/vnd.openxmlformats-officedocument."
+        "presentationml.presentation"
+    ): ".pptx",
 }
 
 
@@ -72,13 +83,17 @@ class PitchService:
 
         if expected_extension is None:
             raise HTTPException(
-                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                status_code=(
+                    status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+                ),
                 detail=(
                     "Only PDF and PPTX pitch decks are supported."
                 ),
             )
 
-        actual_extension = Path(file.filename).suffix.lower()
+        actual_extension = Path(
+            file.filename
+        ).suffix.lower()
 
         if actual_extension != expected_extension:
             raise HTTPException(
@@ -99,7 +114,9 @@ class PitchService:
 
         if len(file_bytes) > MAX_FILE_SIZE_BYTES:
             raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=(
+                    status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+                ),
                 detail="Pitch decks must not exceed 20 MB.",
             )
 
@@ -110,18 +127,26 @@ class PitchService:
             )
         except PitchExtractionError as error:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=(
+                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                ),
                 detail=str(error),
             ) from error
 
-        safe_file_name = f"{uuid4()}{expected_extension}"
+        safe_file_name = (
+            f"{uuid4()}{expected_extension}"
+        )
 
         file_path = (
-            f"{founder_id}/{startup['id']}/{safe_file_name}"
+            f"{founder_id}/"
+            f"{startup['id']}/"
+            f"{safe_file_name}"
         )
 
         try:
-            supabase_admin.storage.from_(PITCH_BUCKET).upload(
+            supabase_admin.storage.from_(
+                PITCH_BUCKET
+            ).upload(
                 path=file_path,
                 file=file_bytes,
                 file_options={
@@ -178,13 +203,131 @@ class PitchService:
                 pass
 
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=(
+                    status.HTTP_500_INTERNAL_SERVER_ERROR
+                ),
                 detail=(
-                    "The pitch upload record could not be returned."
+                    "The pitch upload record could not "
+                    "be returned."
                 ),
             )
 
-        return response.data[0]
+        analysis_record = response.data[0]
+        analysis_id = analysis_record["id"]
+
+        try:
+            ai_analysis = (
+                await pitch_analysis_provider.analyze(
+                    extracted_text=extracted_text,
+                    startup_context=startup,
+                )
+            )
+
+            overall_score = (
+                calculate_overall_pitch_score(
+                    ai_analysis
+                )
+            )
+
+            completed_payload = {
+                "analysis_status": "completed",
+                "overall_score": overall_score,
+                "problem_clarity_score": (
+                    ai_analysis.problem_clarity_score
+                ),
+                "solution_clarity_score": (
+                    ai_analysis.solution_clarity_score
+                ),
+                "market_opportunity_score": (
+                    ai_analysis.market_opportunity_score
+                ),
+                "traction_evidence_score": (
+                    ai_analysis.traction_evidence_score
+                ),
+                "business_model_score": (
+                    ai_analysis.business_model_score
+                ),
+                "team_credibility_score": (
+                    ai_analysis.team_credibility_score
+                ),
+                "funding_ask_score": (
+                    ai_analysis.funding_ask_score
+                ),
+                "score_breakdown": [
+                    item.model_dump()
+                    for item
+                    in ai_analysis.score_breakdown
+                ],
+                "strengths": [
+                    item.model_dump()
+                    for item in ai_analysis.strengths
+                ],
+                "weaknesses": [
+                    item.model_dump()
+                    for item in ai_analysis.weaknesses
+                ],
+                "recommendations": [
+                    item.model_dump()
+                    for item
+                    in ai_analysis.recommendations
+                ],
+                "analysis_provider": (
+                    pitch_analysis_provider.provider_name
+                ),
+                "model_name": (
+                    pitch_analysis_provider.model_name
+                ),
+                "methodology_version": (
+                    PITCH_METHODOLOGY_VERSION
+                ),
+                "failure_reason": None,
+            }
+
+            update_response = (
+                supabase_admin.table("pitch_analyses")
+                .update(completed_payload)
+                .eq("id", analysis_id)
+                .execute()
+            )
+
+            if not update_response.data:
+                raise PitchAnalysisProviderError(
+                    "The completed pitch analysis "
+                    "could not be saved."
+                )
+
+            return update_response.data[0]
+
+        except PitchAnalysisProviderError as error:
+            failure_payload = {
+                "analysis_status": "failed",
+                "failure_reason": str(error),
+                "analysis_provider": (
+                    pitch_analysis_provider.provider_name
+                ),
+                "model_name": (
+                    pitch_analysis_provider.model_name
+                ),
+                "methodology_version": (
+                    PITCH_METHODOLOGY_VERSION
+                ),
+            }
+
+            try:
+                (
+                    supabase_admin
+                    .table("pitch_analyses")
+                    .update(failure_payload)
+                    .eq("id", analysis_id)
+                    .execute()
+                )
+            except Exception:
+                pass
+
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=str(error),
+            ) from error
 
     @staticmethod
     def get_latest_analysis(
@@ -203,7 +346,8 @@ class PitchService:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=(
-                    "Unable to load the latest pitch analysis."
+                    "Unable to load the latest "
+                    "pitch analysis."
                 ),
             ) from error
 

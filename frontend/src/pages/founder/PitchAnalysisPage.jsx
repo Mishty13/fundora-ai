@@ -89,6 +89,7 @@ function formatScore(value) {
 
 function ScoreBar({ label, score }) {
   const numericScore = Number(score)
+
   const safeScore = Number.isFinite(numericScore)
     ? Math.min(Math.max(numericScore, 0), 100)
     : 0
@@ -608,8 +609,8 @@ function PitchAnalysisPage() {
                   <p className="mt-3 text-sm leading-6 text-slate-500">
                     The deck has been securely uploaded and its
                     genuine readable content has been extracted.
-                    AI analysis will begin once the Granite provider
-                    is connected.
+                    AI analysis is being processed through Fundora's
+                    intelligence pipeline.
                   </p>
 
                   <div
@@ -714,7 +715,7 @@ function PitchAnalysisPage() {
               <div className="flex items-start gap-4">
                 <XCircle className="h-7 w-7 shrink-0 text-rose-300" />
 
-                <div>
+                <div className="min-w-0 flex-1">
                   <h2 className="text-xl font-bold text-white">
                     Analysis could not be completed
                   </h2>
@@ -723,6 +724,81 @@ function PitchAnalysisPage() {
                     {analysis.failure_reason ||
                       'The pitch analysis failed before a valid result could be produced.'}
                   </p>
+
+                  <button
+                    type="button"
+                    onClick={chooseAnotherDeck}
+                    className="
+                      focus-ring mt-5 inline-flex items-center
+                      gap-2 rounded-xl border
+                      border-white/[0.08] bg-white/[0.035]
+                      px-4 py-2.5 text-sm font-semibold
+                      text-slate-300 transition-colors
+                      hover:bg-white/[0.06] hover:text-white
+                    "
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Try another pitch deck
+                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.pptx"
+                    onChange={handleFileSelection}
+                    className="hidden"
+                  />
+
+                  {selectedFile && (
+                    <div
+                      className="
+                        mt-5 rounded-xl border
+                        border-violet-400/15
+                        bg-violet-400/[0.05] p-4
+                      "
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <FileUp className="h-5 w-5 shrink-0 text-violet-200" />
+
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-white">
+                            {selectedFile.name}
+                          </p>
+
+                          <p className="mt-1 text-xs text-slate-500">
+                            {formatFileSize(selectedFile.size)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleUpload}
+                        disabled={uploading}
+                        className="
+                          focus-ring mt-4 inline-flex items-center
+                          gap-2 rounded-lg bg-violet-600
+                          px-4 py-2.5 text-sm font-semibold
+                          text-white transition-opacity
+                          hover:opacity-95
+                          disabled:cursor-not-allowed
+                          disabled:opacity-60
+                        "
+                      >
+                        {uploading ? (
+                          <>
+                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                            Analyzing pitch deck...
+                          </>
+                        ) : (
+                          <>
+                            <FileUp className="h-4 w-4" />
+                            Upload and analyze
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </section>
