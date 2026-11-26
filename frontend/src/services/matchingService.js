@@ -1,3 +1,4 @@
+
 import { apiRequest } from './apiClient'
 
 async function generateMatches() {
@@ -16,6 +17,7 @@ async function getInvestorMatches() {
 
 export const matchingService = {
   generateMatches,
+  generateStartupMatches: generateMatches,
   getStartupMatches,
   getInvestorMatches,
 }
