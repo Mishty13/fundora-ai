@@ -302,7 +302,7 @@ function StartupMatchCard({
   const [briefLoading, setBriefLoading] = useState(false)
   const [briefError, setBriefError] = useState('')
   const nested = match.startup || match.startups || match.startup_profile
-  const startup = Array.isArray(nested) ? (nested[0] || {}) : (nested || {})
+  const startup = { ...match, ...(Array.isArray(nested) ? (nested[0] || {}) : (nested || {})) }
   const startupName = startup.name || startup.startup_name || startup.company_name || match.startup_name || match.company_name || 'Unnamed startup'
   const reasons = Array.isArray(match.match_reasons) ? match.match_reasons : []
   const handleGenerateBrief = async () => {
@@ -436,6 +436,7 @@ function StartupMatchCard({
           <DimensionScore
             label="Industry fit"
             value={
+              match.dimension_scores?.sector ??
               match.dimension_scores?.industry_fit ??
               match.dimension_scores?.industry
             }
@@ -457,6 +458,7 @@ function StartupMatchCard({
           <DimensionScore
             label="Investment fit"
             value={
+              match.dimension_scores?.cheque ??
               match.dimension_scores?.investment_fit ??
               match.dimension_scores?.investment
             }
